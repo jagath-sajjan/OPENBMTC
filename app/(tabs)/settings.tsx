@@ -1,11 +1,14 @@
-import { View, Text, StyleSheet, useWindowDimensions, ScrollView, Pressable, Linking } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, ScrollView, Pressable, Linking, Alert } from 'react-native';
 import { SafeAreaView, Edge, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 
 export default function SettingsScreen() {
     const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
+    const router = useRouter();
 
     const isSmallPhone = width < 375;
     const isTablet = width >= 768;
@@ -22,9 +25,35 @@ export default function SettingsScreen() {
         await Linking.openURL('https://github.com/jagath-sajjan/OPENBMTC/issues');
     };
 
+    const handleLicense = async () => {
+        await Linking.openURL('https://github.com/jagath-sajjan/OPENBMTC/blob/main/LICENSE');
+    };
+
     const handleTheme = () => {
         // Theme page navigation - to be implemented later
         console.log('Theme settings - Coming soon');
+    };
+
+    const handleResetOnboarding = async () => {
+        Alert.alert(
+            'Reset Onboarding',
+            'This will clear your onboarding status and location permissions. You will see the welcome screens again. Continue?',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel'
+                },
+                {
+                    text: 'Reset',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await AsyncStorage.removeItem('onboarding_completed');
+                        // Note: Location permissions are system-level and will be re-requested on onboarding
+                        router.replace('/onboarding');
+                    }
+                }
+            ]
+        );
     };
 
     return (
@@ -77,6 +106,24 @@ export default function SettingsScreen() {
                             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
                         </Pressable>
 
+                        {/* License Card */}
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.settingCard,
+                                pressed && styles.settingCardPressed
+                            ]}
+                            onPress={handleLicense}
+                        >
+                            <View style={[styles.iconContainer, { backgroundColor: '#FFE89A' }]}>
+                                <Ionicons name="document-text" size={24} color="#1F2937" />
+                            </View>
+                            <View style={styles.settingContent}>
+                                <Text style={styles.settingTitle}>License</Text>
+                                <Text style={styles.settingDescription}>View license details</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                        </Pressable>
+
                         {/* Theme Settings Card */}
                         <Pressable
                             style={({ pressed }) => [
@@ -113,11 +160,29 @@ export default function SettingsScreen() {
                             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
                         </Pressable>
 
+                        {/* Reset Onboarding Card (Developer Option) */}
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.settingCard,
+                                pressed && styles.settingCardPressed
+                            ]}
+                            onPress={handleResetOnboarding}
+                        >
+                            <View style={[styles.iconContainer, { backgroundColor: '#B8A4F5' }]}>
+                                <Ionicons name="refresh" size={24} color="#1F2937" />
+                            </View>
+                            <View style={styles.settingContent}>
+                                <Text style={styles.settingTitle}>Reset Onboarding</Text>
+                                <Text style={styles.settingDescription}>View welcome screens again</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                        </Pressable>
+
                         {/* About Section */}
                         <View style={styles.aboutSection}>
                             <Text style={styles.aboutTitle}>About OpenBMTC</Text>
                             <Text style={styles.aboutText}>
-                                An open-source application for Bangalore Public Transport.
+                                An open source application for Bangalore Public Transport.
                                 Built with ❤️ for the community.
                             </Text>
                             <View style={styles.creditContainer}>

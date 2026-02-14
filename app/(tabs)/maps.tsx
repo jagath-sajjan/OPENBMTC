@@ -2,13 +2,18 @@ import { View, Text, StyleSheet, useWindowDimensions, Pressable } from 'react-na
 import { SafeAreaView, Edge, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
-import { useState, useRef } from 'react';
-import MapView, { PROVIDER_DEFAULT } from 'react-native-maps';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import MapView, { PROVIDER_DEFAULT, Polyline, Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
+import { useLocalSearchParams } from 'expo-router';
 
 export default function MapsScreen() {
     const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
     const mapRef = useRef<MapView>(null);
+
+    const params = useLocalSearchParams();
+    const routeDataParam = params.routeData as string;
 
     const isSmallPhone = width < 375;
     const isTablet = width >= 768;
@@ -17,7 +22,7 @@ export default function MapsScreen() {
     const horizontalPadding = isLargeTablet ? 48 : isTablet ? 32 : isSmallPhone ? 16 : 20;
     const titleSize = isTablet ? 44 : isSmallPhone ? 32 : 38;
 
-    // Bengaluru coordinates
+    // Bengaluru coordinates (default)
     const bengaluruRegion = {
         latitude: 12.9716,
         longitude: 77.5946,
@@ -25,31 +30,190 @@ export default function MapsScreen() {
         longitudeDelta: 0.15,
     };
 
+    // Start with Bengaluru overview
     const [region, setRegion] = useState(bengaluruRegion);
+    const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [hasLocationPermission, setHasLocationPermission] = useState(false);
+    const [initialLocationSet, setInitialLocationSet] = useState(false);
 
-    const handleZoomIn = () => {
+    // Route Visualization Data
+    const routeVisualization = useMemo(() => {
+        if (!routeDataParam) return null;
+        try {
+            const data = JSON.parse(routeDataParam);
+            const features = data.features || [];
+
+            // Group stops by direction to avoid zigzag (mixing UP and DOWN routes)
+            const stopsByDirection: Record<string, any[]> = {};
+            features.forEach((stop: any) => {
+                const dir = stop.properties?.direction_id || stop.properties?.direction || '0';
+                if (!stopsByDirection[dir]) {
+                    stopsByDirection[dir] = [];
+                }
+                stopsByDirection[dir].push(stop);
+            });
+
+            // Find the direction with the most stops
+            let maxStops = 0;
+            let selectedDirection = Object.keys(stopsByDirection)[0];
+
+            Object.keys(stopsByDirection).forEach(dir => {
+                if (stopsByDirection[dir].length > maxStops) {
+                    maxStops = stopsByDirection[dir].length;
+                    selectedDirection = dir;
+                }
+            });
+
+            const targetStops = stopsByDirection[selectedDirection] || features;
+
+            // Sort stops
+            const sortedStops = [...targetStops].sort((a: any, b: any) => {
+                return (a.properties?.stop_sequence || 0) - (b.properties?.stop_sequence || 0);
+            });
+
+            // Extract coordinates for Polyline
+            const coordinates = sortedStops
+                .filter((stop: any) => stop.geometry?.coordinates)
+                .map((stop: any) => ({
+                    latitude: stop.geometry.coordinates[1],
+                    longitude: stop.geometry.coordinates[0],
+                }));
+
+            return { stops: sortedStops, coordinates };
+        } catch (e) {
+            console.error("Failed to parse route data", e);
+            return null;
+        }
+    }, [routeDataParam]);
+
+    // For hold-to-zoom functionality
+    const zoomIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Zoom limits (keep within Bengaluru area)
+    const MIN_DELTA = 0.005; // Maximum zoom in
+    const MAX_DELTA = 0.3;   // Maximum zoom out (Bengaluru bounds)
+
+    useEffect(() => {
+        if (routeVisualization?.coordinates?.length && mapRef.current) {
+            // Fit map to route
+            setTimeout(() => {
+                mapRef.current?.fitToCoordinates(routeVisualization.coordinates, {
+                    edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+                    animated: true,
+                });
+            }, 500);
+        } else {
+            getUserLocation();
+        }
+    }, [routeVisualization]);
+
+    const getUserLocation = async () => {
+        try {
+            const { status } = await Location.getForegroundPermissionsAsync();
+
+            if (status === 'granted') {
+                setHasLocationPermission(true);
+                const location = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Balanced,
+                });
+
+                const userCoords = {
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                };
+
+                setUserLocation(userCoords);
+
+                // Cinematic fly-in animation from Bengaluru overview to user location
+                if (!initialLocationSet) {
+                    // Start from Bengaluru overview
+                    setRegion(bengaluruRegion);
+
+                    // After a brief moment, fly to user location
+                    setTimeout(() => {
+                        const userRegion = {
+                            latitude: userCoords.latitude,
+                            longitude: userCoords.longitude,
+                            latitudeDelta: 0.05,
+                            longitudeDelta: 0.05,
+                        };
+                        mapRef.current?.animateToRegion(userRegion, 2000); // 2 second smooth flight
+                    }, 800);
+
+                    setInitialLocationSet(true);
+                }
+            } else {
+                setHasLocationPermission(false);
+            }
+        } catch (error) {
+            console.error('Error getting location:', error);
+        }
+    };
+
+    const performZoom = (zoomIn: boolean) => {
+        const factor = zoomIn ? 1.5 : 0.67;
+        let newLatDelta = region.latitudeDelta / factor;
+        let newLongDelta = region.longitudeDelta / factor;
+
+        // Apply zoom limits
+        if (newLatDelta < MIN_DELTA) newLatDelta = MIN_DELTA;
+        if (newLatDelta > MAX_DELTA) newLatDelta = MAX_DELTA;
+        if (newLongDelta < MIN_DELTA) newLongDelta = MIN_DELTA;
+        if (newLongDelta > MAX_DELTA) newLongDelta = MAX_DELTA;
+
         const newRegion = {
             ...region,
-            latitudeDelta: region.latitudeDelta / 1.5,
-            longitudeDelta: region.longitudeDelta / 1.5,
+            latitudeDelta: newLatDelta,
+            longitudeDelta: newLongDelta,
         };
-        setRegion(newRegion);
-        mapRef.current?.animateToRegion(newRegion, 300);
+
+        mapRef.current?.animateToRegion(newRegion, 200);
+    };
+
+    const handleZoomIn = () => {
+        performZoom(true);
     };
 
     const handleZoomOut = () => {
-        const newRegion = {
-            ...region,
-            latitudeDelta: region.latitudeDelta * 1.5,
-            longitudeDelta: region.longitudeDelta * 1.5,
-        };
-        setRegion(newRegion);
-        mapRef.current?.animateToRegion(newRegion, 300);
+        performZoom(false);
     };
 
-    const handleMyLocation = () => {
-        mapRef.current?.animateToRegion(bengaluruRegion, 500);
-        setRegion(bengaluruRegion);
+    const startContinuousZoom = (zoomIn: boolean) => {
+        // Clear any existing interval
+        if (zoomIntervalRef.current) {
+            clearInterval(zoomIntervalRef.current);
+        }
+
+        // Perform first zoom immediately
+        performZoom(zoomIn);
+
+        // Then continue zooming while held
+        zoomIntervalRef.current = setInterval(() => {
+            performZoom(zoomIn);
+        }, 250);
+    };
+
+    const stopContinuousZoom = () => {
+        if (zoomIntervalRef.current) {
+            clearInterval(zoomIntervalRef.current);
+            zoomIntervalRef.current = null;
+        }
+    };
+
+    const handleMyLocation = async () => {
+        if (hasLocationPermission && userLocation) {
+            // Center on user's actual location
+            const userRegion = {
+                latitude: userLocation.latitude,
+                longitude: userLocation.longitude,
+                latitudeDelta: 0.05,
+                longitudeDelta: 0.05,
+            };
+            mapRef.current?.animateToRegion(userRegion, 500);
+        } else {
+            // Fall back to Bengaluru center
+            mapRef.current?.animateToRegion(bengaluruRegion, 500);
+        }
     };
 
     return (
@@ -72,9 +236,15 @@ export default function MapsScreen() {
                         <View style={styles.mapHeader}>
                             <View style={styles.locationBadge}>
                                 <Ionicons name="location" size={16} color="#1F2937" />
-                                <Text style={styles.locationText}>Bengaluru</Text>
+                                <Text style={styles.locationText}>
+                                    {hasLocationPermission && userLocation ? 'Your Location' : 'Bengaluru'}
+                                </Text>
                             </View>
-                            <Text style={styles.coordsText}>12.9716° N, 77.5946° E</Text>
+                            <Text style={styles.coordsText}>
+                                {hasLocationPermission && userLocation
+                                    ? `${userLocation.latitude.toFixed(4)}° N, ${userLocation.longitude.toFixed(4)}° E`
+                                    : '12.9716° N, 77.5946° E'}
+                            </Text>
                         </View>
 
                         {/* Map Container */}
@@ -87,12 +257,43 @@ export default function MapsScreen() {
                                 region={region}
                                 onRegionChangeComplete={setRegion}
                                 showsUserLocation={true}
+                                followsUserLocation={false}
                                 showsMyLocationButton={false}
                                 showsCompass={true}
                                 showsScale={true}
                                 loadingEnabled={true}
                                 loadingIndicatorColor="#1F2937"
-                            />
+                                userLocationCalloutEnabled={true}
+                                userLocationAnnotationTitle="You are here"
+                            >
+                                {routeVisualization && (
+                                    <>
+                                        <Polyline
+                                            coordinates={routeVisualization.coordinates}
+                                            strokeColor="#3B82F6"
+                                            strokeWidth={4}
+                                        />
+                                        {routeVisualization.stops.map((stop: any, index: number) => (
+                                            <Marker
+                                                key={`stop-${index}`}
+                                                coordinate={{
+                                                    latitude: stop.geometry.coordinates[1],
+                                                    longitude: stop.geometry.coordinates[0],
+                                                }}
+                                                title={stop.properties?.name}
+                                                description={`Stop #${index + 1}`}
+                                            >
+                                                <View style={styles.markerContainer}>
+                                                    <View style={[
+                                                        styles.markerDot,
+                                                        (index === 0 || index === routeVisualization.stops.length - 1) && styles.markerDotLarge
+                                                    ]} />
+                                                </View>
+                                            </Marker>
+                                        ))}
+                                    </>
+                                )}
+                            </MapView>
 
                             {/* Zoom Controls */}
                             <View style={styles.zoomControls}>
@@ -102,6 +303,8 @@ export default function MapsScreen() {
                                         pressed && styles.zoomButtonPressed
                                     ]}
                                     onPress={handleZoomIn}
+                                    onPressIn={() => startContinuousZoom(true)}
+                                    onPressOut={stopContinuousZoom}
                                 >
                                     <Ionicons name="add" size={24} color="#1F2937" />
                                 </Pressable>
@@ -112,6 +315,8 @@ export default function MapsScreen() {
                                         pressed && styles.zoomButtonPressed
                                     ]}
                                     onPress={handleZoomOut}
+                                    onPressIn={() => startContinuousZoom(false)}
+                                    onPressOut={stopContinuousZoom}
                                 >
                                     <Ionicons name="remove" size={24} color="#1F2937" />
                                 </Pressable>
@@ -303,5 +508,27 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#1F2937',
         fontFamily: 'Poppins_600SemiBold',
+    },
+    markerContainer: {
+        width: 20,
+        height: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    markerDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#FAF8F5',
+        borderWidth: 2,
+        borderColor: '#EF4444',
+    },
+    markerDotLarge: {
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        borderWidth: 3,
+        backgroundColor: '#A8E5BC',
+        borderColor: '#059669',
     },
 });

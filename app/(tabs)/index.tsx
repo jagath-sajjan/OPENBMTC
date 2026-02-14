@@ -3,11 +3,30 @@ import { SafeAreaView, useSafeAreaInsets, Edge } from 'react-native-safe-area-co
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { useState, useEffect } from 'react';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [greeting, setGreeting] = useState('Good evening');
+  const [hasLocationPermission, setHasLocationPermission] = useState<boolean>(false);
+  const router = useRouter();
+
+  // Check location permission
+  useEffect(() => {
+    checkLocationPermission();
+  }, []);
+
+  const checkLocationPermission = async () => {
+    const { status } = await Location.getForegroundPermissionsAsync();
+    setHasLocationPermission(status === 'granted');
+  };
+
+  const requestLocationPermission = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    setHasLocationPermission(status === 'granted');
+  };
 
   // Get time-based greeting (IST)
   useEffect(() => {
@@ -113,6 +132,7 @@ export default function HomeScreen() {
                   { height: smallCardHeight },
                   pressed && styles.cardPressed
                 ]}
+                onPress={() => router.push('/search-routes')}
               >
                 <View style={styles.cardInnerSmall}>
                   <View style={[styles.iconContainerSmall, { backgroundColor: '#FFA776' }]}>
@@ -150,8 +170,10 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 styles.cardLarge,
                 { height: largeCardHeight },
+                !hasLocationPermission && styles.cardDisabled,
                 pressed && styles.cardPressed
               ]}
+              onPress={hasLocationPermission ? undefined : requestLocationPermission}
             >
               <View style={styles.cardInner}>
                 <View style={[styles.iconContainer, { backgroundColor: '#C7ADEB' }]}>
@@ -159,8 +181,15 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.cardTextContainer}>
                   <Text style={[styles.cardTitle, { fontSize: cardTitleSize }]}>Nearest Bus Stop</Text>
-                  <Text style={styles.cardDescription}>Based on your location</Text>
+                  <Text style={styles.cardDescription}>
+                    {hasLocationPermission ? 'Based on your location' : 'Location permission required'}
+                  </Text>
                 </View>
+                {!hasLocationPermission && (
+                  <View style={styles.lockIcon}>
+                    <Ionicons name="lock-closed" size={20} color="#9CA3AF" />
+                  </View>
+                )}
               </View>
             </Pressable>
 
@@ -409,5 +438,11 @@ const styles = StyleSheet.create({
   creditHeart: {
     fontSize: 12,
     color: '#EF4444',
+  },
+  cardDisabled: {
+    opacity: 0.5,
+  },
+  lockIcon: {
+    marginLeft: 8,
   },
 });
