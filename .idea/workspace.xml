@@ -13,9 +13,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="14c538a3-8bde-47f1-ba23-9aeaa77fe5f8" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/(tabs)/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/index.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/search-routes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/search-routes.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/RouteDetailsModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/RouteDetailsModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/utils/api.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -27,7 +27,7 @@
     <option name="formatViaClangd" value="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="124" />
+    <option name="cachedIndexableFilesCount" value="129" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -85,7 +85,8 @@
       <option name="presentableId" value="Default" />
       <updated>1771126953668</updated>
       <workItem from="1771126955920" duration="13541000" />
-      <workItem from="1771152024089" duration="2140000" />
+      <workItem from="1771152024089" duration="4754000" />
+      <workItem from="1771158572856" duration="1527000" />
     </task>
     <servers />
   </component>

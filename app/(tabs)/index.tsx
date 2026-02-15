@@ -25,7 +25,21 @@ export default function HomeScreen() {
 
   const requestLocationPermission = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
-    setHasLocationPermission(status === 'granted');
+    const granted = status === 'granted';
+    setHasLocationPermission(granted);
+    return granted;
+  };
+
+  const handleNearestStops = async () => {
+    if (hasLocationPermission) {
+      router.push('/nearest-stops');
+      return;
+    }
+
+    const granted = await requestLocationPermission();
+    if (granted) {
+      router.push('/nearest-stops');
+    }
   };
 
   // Get time-based greeting (IST)
@@ -174,7 +188,7 @@ export default function HomeScreen() {
                 !hasLocationPermission && styles.cardDisabled,
                 pressed && styles.cardPressed
               ]}
-              onPress={hasLocationPermission ? undefined : requestLocationPermission}
+              onPress={handleNearestStops}
             >
               <View style={styles.cardInner}>
                 <View style={[styles.iconContainer, { backgroundColor: '#C7ADEB' }]}>

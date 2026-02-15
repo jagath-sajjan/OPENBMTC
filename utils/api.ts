@@ -140,6 +140,10 @@ const getAllStopsCached = async (): Promise<Stop[]> => {
     return stops;
 };
 
+export async function getAllStops() {
+    return getAllStopsCached();
+}
+
 const buildFallbackRouteStops = async (routeId: string): Promise<any[]> => {
     const normalizedRouteId = routeId.trim();
     const allStops = await getAllStopsCached();
