@@ -5,17 +5,42 @@ import { Platform } from 'react-native';
 import { useState, useEffect } from 'react';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
+import { getAPIMeta, getAPIHealth } from '../../utils/api';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [greeting, setGreeting] = useState('Good evening');
   const [hasLocationPermission, setHasLocationPermission] = useState<boolean>(false);
+  const [meta, setMeta] = useState<{ datasets?: { routes?: number; stops?: number } } | null>(null);
+  const [health, setHealth] = useState<{ status?: string; db?: string } | null>(null);
   const router = useRouter();
 
   // Check location permission
   useEffect(() => {
     checkLocationPermission();
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const loadStats = async () => {
+      try {
+        const [metaResult, healthResult] = await Promise.all([
+          getAPIMeta(),
+          getAPIHealth()
+        ]);
+        if (!active) return;
+        setMeta(metaResult);
+        setHealth(healthResult);
+      } catch (error) {
+        console.error('Failed to load API stats:', error);
+      }
+    };
+
+    loadStats();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const checkLocationPermission = async () => {
@@ -86,6 +111,9 @@ export default function HomeScreen() {
   const titleSize = isTablet ? 44 : isSmallPhone ? 32 : 38;
   const cardTitleSize = isTablet ? 24 : isSmallPhone ? 18 : 20;
   const cardTitleSmallSize = isTablet ? 20 : isSmallPhone ? 16 : 18;
+  const formatCount = (value?: number) =>
+    typeof value === 'number' ? value.toLocaleString() : '—';
+  const serviceStatus = health?.status === 'ok' ? 'OK' : health?.status ? 'Down' : '—';
 
   return (
     <View style={styles.container}>
@@ -212,17 +240,17 @@ export default function HomeScreen() {
             {/* Stats Card */}
             <View style={styles.statsCard}>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>250+</Text>
+                <Text style={styles.statNumber}>{formatCount(meta?.datasets?.routes)}</Text>
                 <Text style={styles.statLabel}>Routes</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>6000+</Text>
+                <Text style={styles.statNumber}>{formatCount(meta?.datasets?.stops)}</Text>
                 <Text style={styles.statLabel}>Bus Stops</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>24/7</Text>
+                <Text style={styles.statNumber}>{serviceStatus}</Text>
                 <Text style={styles.statLabel}>Service</Text>
               </View>
             </View>
