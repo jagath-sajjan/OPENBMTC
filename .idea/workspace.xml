@@ -14,9 +14,14 @@
   <component name="ChangeListManager">
     <list default="true" id="14c538a3-8bde-47f1-ba23-9aeaa77fe5f8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(tabs)/_layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/_layout.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/(tabs)/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/index.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/utils/api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(tabs)/maps.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/maps.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/nearest-stops.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/nearest-stops.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/search-routes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/search-routes.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/stop-details.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/stop-details.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/RouteDetailsModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/RouteDetailsModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,6 +92,7 @@
       <workItem from="1771126955920" duration="13541000" />
       <workItem from="1771152024089" duration="4754000" />
       <workItem from="1771158572856" duration="1527000" />
+      <workItem from="1771160229897" duration="4836000" />
     </task>
     <servers />
   </component>

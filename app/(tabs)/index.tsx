@@ -167,6 +167,7 @@ export default function HomeScreen() {
                   { height: smallCardHeight },
                   pressed && styles.cardPressed
                 ]}
+                onPress={() => router.push('/maps')}
               >
                 <View style={styles.cardInnerSmall}>
                   <View style={[styles.iconContainerSmall, { backgroundColor: '#FFA89A' }]}>
