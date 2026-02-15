@@ -40,6 +40,7 @@ export default function RouteDetailsModal({ visible, routeId, onClose }: RouteDe
     if (!visible) return null;
 
     const stops = routeData?.features || [];
+    const isFallback = routeData?.meta?.fallback;
 
     // Group stops by direction to avoid zigzag (mixing UP and DOWN routes)
     const stopsByDirection: Record<string, any[]> = {};
@@ -114,13 +115,19 @@ export default function RouteDetailsModal({ visible, routeId, onClose }: RouteDe
                         )}
 
                         {/* Content */}
-                        {!loading && routeData && (
+                        {!loading && routeData && stops.length > 0 && (
                             <>
                                 {/* Route Title */}
                                 <View style={styles.titleContainer}>
                                     <Text style={styles.routeTitle}>
                                         {firstStop} {isCircular ? '↻' : '⇄'} {lastStop}
                                     </Text>
+                                    {isFallback && (
+                                        <View style={styles.fallbackNotice}>
+                                            <Ionicons name="information-circle" size={14} color="#F59E0B" />
+                                            <Text style={styles.fallbackText}>Stop order may be approximate</Text>
+                                        </View>
+                                    )}
                                     <View style={styles.statsContainer}>
                                         <View style={styles.stat}>
                                             <Ionicons name="location" size={14} color="#6B7280" />
@@ -190,7 +197,7 @@ export default function RouteDetailsModal({ visible, routeId, onClose }: RouteDe
                         )}
 
                         {/* Error State */}
-                        {!loading && !routeData && (
+                        {!loading && (!routeData || stops.length === 0) && (
                             <View style={styles.errorContainer}>
                                 <Ionicons name="alert-circle" size={48} color="#EF4444" />
                                 <Text style={styles.errorText}>Failed to load route details</Text>
@@ -294,6 +301,17 @@ const styles = StyleSheet.create({
         fontFamily: 'Poppins_500Medium',
         color: '#6B7280',
         letterSpacing: 0.5,
+    },
+    fallbackNotice: {
+        marginTop: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    fallbackText: {
+        fontSize: 12,
+        fontFamily: 'Poppins_500Medium',
+        color: '#B45309',
     },
     statDivider: {
         width: 1,

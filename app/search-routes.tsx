@@ -2,8 +2,8 @@ import { View, Text, TextInput, StyleSheet, Pressable, FlatList, ActivityIndicat
 import { SafeAreaView, Edge, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'expo-router';
-import { searchAll } from '../utils/api';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { searchAll, searchStopsAPI, searchRoutesAPI } from '../utils/api';
 import type { Stop, Route } from '../types/database';
 import RouteDetailsModal from '../components/RouteDetailsModal';
 
@@ -11,6 +11,9 @@ export default function SearchRoutesScreen() {
     const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const params = useLocalSearchParams();
+    const rawMode = typeof params.mode === 'string' ? params.mode : Array.isArray(params.mode) ? params.mode[0] : undefined;
+    const searchMode = rawMode === 'stops' ? 'stops' : rawMode === 'routes' ? 'routes' : 'all';
 
     const [searchQuery, setSearchQuery] = useState('');
     const [stops, setStops] = useState<Stop[]>([]);
@@ -40,7 +43,7 @@ export default function SearchRoutesScreen() {
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [searchQuery]);
+    }, [searchQuery, searchMode]);
 
     const handleSearch = async () => {
         if (searchQuery.length < 2) return;
@@ -49,9 +52,19 @@ export default function SearchRoutesScreen() {
         setError(null);
 
         try {
-            const result = await searchAll(searchQuery, 10);
-            setStops(result.stops);
-            setRoutes(result.routes);
+            if (searchMode === 'stops') {
+                const result = await searchStopsAPI(searchQuery, 10);
+                setStops(result.stops);
+                setRoutes([]);
+            } else if (searchMode === 'routes') {
+                const result = await searchRoutesAPI(searchQuery, 10);
+                setRoutes(result.routes);
+                setStops([]);
+            } else {
+                const result = await searchAll(searchQuery, 10);
+                setStops(result.stops);
+                setRoutes(result.routes);
+            }
         } catch (err) {
             setError('Failed to search. Please try again.');
             console.error('Search error:', err);
@@ -67,8 +80,7 @@ export default function SearchRoutesScreen() {
                 pressed && styles.resultCardPressed
             ]}
             onPress={() => {
-                // TODO: Navigate to stop details
-                console.log('Selected stop:', item.name);
+                router.push({ pathname: '/stop-details', params: { id: item.id || item._id, name: item.name } });
             }}
         >
             <View style={[styles.resultIcon, { backgroundColor: '#A8E5BC' }]}>
@@ -115,6 +127,31 @@ export default function SearchRoutesScreen() {
         </View>
     );
 
+    const showRoutes = searchMode !== 'stops';
+    const showStops = searchMode !== 'routes';
+    const headerTitle = searchMode === 'stops' ? 'Search Stops' : searchMode === 'routes' ? 'Search Routes' : 'Search';
+    const headerSubtitle = searchMode === 'stops'
+        ? 'Find bus stops'
+        : searchMode === 'routes'
+            ? 'Find bus routes'
+            : 'Find routes and stops';
+    const inputPlaceholder = searchMode === 'stops'
+        ? 'Search for stops...'
+        : searchMode === 'routes'
+            ? 'Search for routes...'
+            : 'Search for routes or stops...';
+    const emptyTitle = searchMode === 'stops'
+        ? 'No stops found'
+        : searchMode === 'routes'
+            ? 'No routes found'
+            : 'No results found';
+    const emptySubtitle = searchMode === 'stops'
+        ? 'Try searching for a stop name'
+        : searchMode === 'routes'
+            ? 'Try searching for a route number'
+            : 'Try searching for a route number or stop name';
+    const isEmpty = (showRoutes ? routes.length === 0 : true) && (showStops ? stops.length === 0 : true);
+
     return (
         <View style={styles.container}>
             {/* Decorative shapes */}
@@ -135,9 +172,9 @@ export default function SearchRoutesScreen() {
                             >
                                 <Ionicons name="arrow-back" size={24} color="#1F2937" />
                             </Pressable>
-                            <Text style={[styles.title, { fontSize: titleSize }]}>Search</Text>
+                            <Text style={[styles.title, { fontSize: titleSize }]}>{headerTitle}</Text>
                         </View>
-                        <Text style={styles.subtitle}>Find routes and stops</Text>
+                        <Text style={styles.subtitle}>{headerSubtitle}</Text>
                     </View>
 
                     {/* Search Input */}
@@ -146,7 +183,7 @@ export default function SearchRoutesScreen() {
                             <Ionicons name="search" size={20} color="#6B7280" style={styles.searchIcon} />
                             <TextInput
                                 style={styles.searchInput}
-                                placeholder="Search for routes or stops..."
+                                placeholder={inputPlaceholder}
                                 placeholderTextColor="#9CA3AF"
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
@@ -188,7 +225,7 @@ export default function SearchRoutesScreen() {
                                 ListHeaderComponent={
                                     <>
                                         {/* Routes Section */}
-                                        {routes.length > 0 && (
+                                        {showRoutes && routes.length > 0 && (
                                             <>
                                                 {renderSectionHeader('Routes', routes.length)}
                                                 {routes.map((route) => (
@@ -200,7 +237,7 @@ export default function SearchRoutesScreen() {
                                         )}
 
                                         {/* Stops Section */}
-                                        {stops.length > 0 && (
+                                        {showStops && stops.length > 0 && (
                                             <>
                                                 {renderSectionHeader('Stops', stops.length)}
                                                 {stops.map((stop) => (
@@ -212,13 +249,11 @@ export default function SearchRoutesScreen() {
                                         )}
 
                                         {/* No Results */}
-                                        {routes.length === 0 && stops.length === 0 && (
+                                        {isEmpty && (
                                             <View style={styles.emptyContainer}>
                                                 <Ionicons name="search" size={64} color="#D1D5DB" />
-                                                <Text style={styles.emptyText}>No results found</Text>
-                                                <Text style={styles.emptySubtext}>
-                                                    Try searching for a route number or stop name
-                                                </Text>
+                                                <Text style={styles.emptyText}>{emptyTitle}</Text>
+                                                <Text style={styles.emptySubtext}>{emptySubtitle}</Text>
                                             </View>
                                         )}
                                     </>

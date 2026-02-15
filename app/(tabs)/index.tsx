@@ -111,6 +111,7 @@ export default function HomeScreen() {
                 { height: largeCardHeight },
                 pressed && styles.cardPressed
               ]}
+              onPress={() => router.push('/search-routes?mode=stops')}
             >
               <View style={styles.cardInner}>
                 <View style={[styles.iconContainer, { backgroundColor: '#A8E5BC' }]}>
@@ -132,7 +133,7 @@ export default function HomeScreen() {
                   { height: smallCardHeight },
                   pressed && styles.cardPressed
                 ]}
-                onPress={() => router.push('/search-routes')}
+                onPress={() => router.push('/search-routes?mode=routes')}
               >
                 <View style={styles.cardInnerSmall}>
                   <View style={[styles.iconContainerSmall, { backgroundColor: '#FFA776' }]}>
