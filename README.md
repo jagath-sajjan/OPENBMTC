@@ -109,4 +109,4 @@ Issues and pull requests are welcome. If you plan a larger change, open an issue
 
 ## License
 
-See `LICENSE`.
+See [LICENSE](https://github.com/jagath-sajjan/OPENBMTC/blob/main/LICENSE).
