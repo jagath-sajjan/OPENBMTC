@@ -1,6 +1,6 @@
 # OpenBMTC
 
-OpenBMTC is a React Native (Expo) app for exploring BMTC bus routes and stops in Bengaluru (Bangalore). It focuses on fast search, nearby stops, and clear route details with a clean, mobile-first experience.
+OpenBMTC is a React Native (Expo) app for exploring BMTC bus routes and stops in Bengaluru (Bangalore). It focuses on fast search, nearby stops, and clear route details with a clean, mobile first experience.
 
 ## Features
 
@@ -9,7 +9,7 @@ OpenBMTC is a React Native (Expo) app for exploring BMTC bus routes and stops in
 - See nearby stops using your current location and a distance slider
 - Open a live transit map via an embedded web view
 - API health and dataset status on the home screen
-- Offline-friendly caching for stops and route endpoints
+- Offline friendly caching for stops and route endpoints
 
 ## App Navigation
 
@@ -18,13 +18,13 @@ OpenBMTC is a React Native (Expo) app for exploring BMTC bus routes and stops in
 - `/nearest-stops` Nearby stops with location permission flow
 - `/stop-details` Stop details and route summaries
 - `/maps` Embedded transit map
-- `/onboarding` First-run onboarding and location permission prompt
+- `/onboarding` First run onboarding and location permission prompt
 
 ## Data and API
 
 The mobile app uses a hosted API by default (this repository does not include API routes).
 
-- Base URL: `https://open-bmtc-api.vercel.app/api`
+- Base URL: [https://open-bmtc-api.vercel.app/api](https://open-bmtc-api.vercel.app/api)
 - Endpoints used in the app:
   - `/bmtc/stops` for the full stop list
   - `/bmtc/aggregated?routeId=...` for route details and route search
@@ -34,7 +34,7 @@ Stops and route endpoints are cached in `AsyncStorage` for 24 hours to reduce ne
 
 If you want to use your own backend, update `API_BASE_URL` in `utils/api.ts`.
 
-Maps by: `https://transitrouter.pages.dev/`.
+Maps by: [https://transitrouter.pages.dev/](https://transitrouter.pages.dev/)
 
 ## Tech Stack
 
@@ -100,8 +100,8 @@ The repository includes MongoDB helpers and service functions that can be used i
 
 ## Useful Links
 
-- Expo Go app (Android): `https://play.google.com/store/apps/details?id=host.exp.exponent&hl=en_IN`
-- Expo documentation: `https://docs.expo.dev/`
+- Expo Go app (Android): [https://play.google.com/store/apps/details?id=host.exp.exponent&hl=en_IN](https://play.google.com/store/apps/details?id=host.exp.exponent&hl=en_IN)
+- Expo documentation: [https://docs.expo.dev/](https://docs.expo.dev/)
 
 ## Contributing
 
